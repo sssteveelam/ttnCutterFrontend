@@ -5,13 +5,12 @@ import { fetchFile } from "@ffmpeg/util";
 import { sendLog } from "@/services/logService";
 import { start } from "repl";
 
-const ffmpeg = new FFmpeg();
-
 export default function CutModule() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [startTime, setStartTime] = useState<string>("00:00:00");
   const [endTime, setEndTime] = useState<string>("00:00:00");
   const [status, setStatus] = useState("");
+  const [ffmpeg, setFFmpeg] = useState(new FFmpeg());
 
   const handleCut = async () => {
     if (!videoFile) return;

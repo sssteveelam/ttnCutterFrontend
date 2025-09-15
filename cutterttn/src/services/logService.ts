@@ -2,7 +2,14 @@ import axios from "axios";
 
 const BASE_URL = "http://localhost:8000";
 
-export async function sendLog(logData: any) {
+interface Log {
+  logId: string;
+  userId: string;
+  action: string;
+  status: string;
+}
+
+export async function sendLog(logData: Log) {
   try {
     const response = await axios.post(`${BASE_URL}/api/logs`, logData);
     return response.data;
