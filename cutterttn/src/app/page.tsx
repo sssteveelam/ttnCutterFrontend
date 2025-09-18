@@ -50,35 +50,13 @@ const ListIcon = (props: any) => (
 );
 
 export default function HomePage() {
-  const [videoUrl, setVideoUrl] = useState<string>("");
-  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
-
-  const handleConfirm = () => {
-    // Reg cho viec detection youtube ID video
-    const regExp =
-      /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=|embed\/|v\/|)([a-zA-Z0-9_-]{11})/;
-
-    const match = videoUrl.match(regExp);
-
-    if (match && match[1]) {
-      const videoId = match[1];
-
-      // Tạo URL thumbnail chuẩn của YouTube
-      const thumbnail = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-      setThumbnailUrl(thumbnail);
-    } else {
-      alert("Vui lòng nhập một URL YouTube hợp lệ.");
-      setThumbnailUrl(null);
-    }
-  };
-
   return (
-    <main className="min-h-screen bg-gray-50 p-6 sm:p-10 flex flex-col items-center font-sans text-gray-800">
+    <main className=" bg-gray-50  sm:p-10 flex flex-col items-center font-sans text-gray-800">
       <h1 className="text-4xl sm:text-5xl font-extrabold mb-10 text-center text-indigo-700">
         Video Cutting Prototype
       </h1>
 
-      <div className="w-full max-w-5xl space-y-8">
+      <div className="w-full  ">
         {/* Download Section */}
         <section className="bg-white p-6 sm:p-8 rounded-2xl shadow-xl border border-gray-200">
           <div className="flex items-center space-x-3 mb-4">
@@ -91,32 +69,6 @@ export default function HomePage() {
             Nhập URL YouTube và tải xuống video để bắt đầu.
           </p>
           <DownloadModule />
-        </section>
-
-        {/* Cut Section */}
-        <section className="bg-white p-6 sm:p-8 rounded-2xl shadow-xl border border-gray-200">
-          <div className="flex items-center space-x-3 mb-4">
-            <ScissorsIcon className="h-8 w-8 text-rose-500" />
-            <h2 className="text-2xl font-bold text-gray-700">Cắt Video</h2>
-          </div>
-          <p className="text-gray-500 mb-6">
-            Cắt các phân đoạn mong muốn từ video đã tải xuống.
-          </p>
-          <CutModule />
-        </section>
-
-        {/* Log Section */}
-        <section className="bg-white p-6 sm:p-8 rounded-2xl shadow-xl border border-gray-200">
-          <div className="flex items-center space-x-3 mb-4">
-            <ListIcon className="h-8 w-8 text-green-500" />
-            <h2 className="text-2xl font-bold text-gray-700">
-              Lịch sử Hoạt động (Logs)
-            </h2>
-          </div>
-          <p className="text-gray-500 mb-6">
-            Xem lại lịch sử các tác vụ đã thực hiện.
-          </p>
-          <LogsPage />
         </section>
       </div>
     </main>

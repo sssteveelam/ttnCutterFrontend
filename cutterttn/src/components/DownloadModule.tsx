@@ -4,18 +4,19 @@ import { sendLog } from "@/services/logService";
 import { saveBlobToFile } from "@/utils/storage";
 import { getVideoFormats } from "@/services/formatService";
 import groupFormats, { GroupedFormats } from "@/utils/format";
-
-import FormatCard from "./FormatCard"; // Đảm bảo FormatCard đã được thiết kế lại
+import Image from "next/image";
+import FormatCard from "./FormatCard";
 
 export default function DownloadModule() {
   const [url, setUrl] = useState<string>("");
   const [status, setStatus] = useState<string>("");
-  const [formats, setFormats] = useState<any[]>([]);
   const [formatsGrouped, setFormatsGrouped] = useState<GroupedFormats>({
     videos: [],
     audios: [],
   });
   const [loading, setLoading] = useState<boolean>(false);
+  const [progress, setProgress] = useState<number>(0);
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
 
   const handleDownloading = async (formatIdSelected: string) => {
     if (!url.startsWith("http")) {
@@ -24,6 +25,7 @@ export default function DownloadModule() {
     }
 
     setLoading(true);
+    setProgress(0); // Reset progress bar
     try {
       setStatus(
         `Đang chuẩn bị tải định dạng ${formatIdSelected}... Vui lòng chờ.`
@@ -42,26 +44,48 @@ export default function DownloadModule() {
         throw new Error(errorData.detail || `Server trả về lỗi ${res.status}`);
       }
 
-      setStatus("Đang tải file về trình duyệt...");
-
-      const contentDisposition = res.headers.get("content-disposition");
-      let filename = "downloaded_file";
+      const contentDisposition = res.headers.get("Content-Disposition");
+      let filename = "download"; // Tên file mặc định
       if (contentDisposition) {
         const filenameMatch = contentDisposition.match(
           /filename\*?=UTF-8''(.+)/
         );
         if (filenameMatch && filenameMatch.length > 1) {
-          filename = decodeURIComponent(filenameMatch[1]);
+          filename = decodeURIComponent(filenameMatch[1].replace(/['"]/g, ""));
+        } else {
+          // Fallback cho trường hợp không có UTF-8
+          const filenameFallback =
+            contentDisposition.match(/filename="?([^"]+)"?/);
+          if (filenameFallback && filenameFallback[1])
+            filename = filenameFallback[1];
         }
       }
 
-      const data = await res.blob();
+      setStatus(`Đang tải file: ${filename}...`);
 
-      const downloadUrl = window.URL.createObjectURL(data);
+      const totalSize = parseInt(res.headers.get("Content-Length") || "0", 10);
+      if (!res.body) throw new Error("Không có nội dung để tải.");
+      const reader = res.body.getReader();
+      const chunks = [];
+      let received = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        received += value.length;
+        if (totalSize > 0) {
+          const percent = Math.round((received / totalSize) * 100);
+          setProgress(percent);
+          setStatus(`Đang tải: ${percent}%`);
+        }
+      }
+
+      const blob = new Blob(chunks);
+      const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = downloadUrl;
       link.download = filename;
-      link.target = "_blank";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -83,11 +107,27 @@ export default function DownloadModule() {
     }
   };
 
+  const handleFetchThumbnail = () => {
+    const regExp =
+      /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=|embed\/|v\/|)([a-zA-Z0-9_-]{11})/;
+    if (url) {
+      const match = url.match(regExp);
+      if (match && match[1]) {
+        const videoId = match[1];
+        const thumbnail = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+        setThumbnailUrl(thumbnail);
+      } else {
+        setThumbnailUrl(null);
+      }
+    }
+  };
+
   const fetchFormats = async () => {
     if (!url.startsWith("http")) {
       alert("URL không hợp lệ!");
       return;
     }
+    handleFetchThumbnail();
     setLoading(true);
     setStatus("Đang tìm kiếm các định dạng có sẵn...");
     try {
@@ -106,111 +146,122 @@ export default function DownloadModule() {
   };
 
   return (
-    <div className="flex flex-col items-center p-6 sm:p-8 bg-gray-50 rounded-2xl border border-gray-200">
-      <h2 className="text-2xl font-bold mb-6 text-center text-indigo-600">
-        Tải Video / Audio
-      </h2>
+    // ---- Container chính ----
+    <div className="w-full max-w-6xl mx-auto p-4 font-sans">
+      <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg">
+        <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-center text-gray-800">
+          Tải Video / Audio
+        </h2>
 
-      {/* Input Section */}
-      <div className="w-full flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4 mb-8">
-        <input
-          type="text"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="Dán link YouTube vào đây..."
-          className="flex-1 w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-300"
-        />
-        <button
-          onClick={fetchFormats}
-          disabled={loading || !url}
-          className={`w-full md:w-auto px-6 py-3 rounded-xl font-semibold text-white transition duration-300 ease-in-out transform hover:scale-105 ${
-            loading || !url
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          }`}>
-          {loading ? "Đang xử lý..." : "Lấy chất lượng"}
-        </button>
+        {/* --- Input Section --- */}
+        <div className="w-full flex flex-col md:flex-row items-center space-y-3 md:space-y-0 md:space-x-3 mb-6">
+          <input
+            type="text"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="Dán link YouTube vào đây..."
+            className="flex-1 w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
+          />
+          <button
+            onClick={fetchFormats}
+            disabled={loading || !url}
+            className={`w-full md:w-auto px-6 py-3 rounded-xl font-bold text-white transition-transform transform hover:scale-105 ${
+              loading || !url
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            }`}>
+            {loading ? "Đang xử lý..." : "Lấy định dạng"}
+          </button>
+        </div>
+
+        {/* --- Status & Progress --- */}
+        {status && (
+          <div>
+            
+            <p className="text-sm text-gray-600 text-center mb-4 min-h-[20px]">
+              
+              {status}
+            </p>
+          </div>
+        )}
+        {loading && progress > 0 && progress < 100 && (
+          <div className="w-full bg-gray-200 rounded-full h-2.5 my-4">
+            
+
+            <div
+              className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+              style={{ width: `${progress}%` }}></div>
+          </div>
+        )}
       </div>
 
-      {/* Status Message */}
-      {status && (
-        <p className="text-sm text-gray-600 italic text-center mb-6">
-          {status}
-        </p>
-      )}
-
-      {/* Formats Section */}
+      {/* --- PHẦN HIỂN THỊ KẾT QUẢ --- */}
       {(formatsGrouped.videos.length > 0 ||
         formatsGrouped.audios.length > 0) && (
-        <div className="w-full space-y-8">
-          {/* Video Formats */}
-          {formatsGrouped.videos.length > 0 && (
-            <div>
-              <h3 className="flex items-center justify-center font-bold text-xl mb-4 text-gray-700">
-                <span className="mr-2 text-3xl">🎞️</span> Chọn chất lượng Video
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {formatsGrouped.videos.map((f: any) => (
-                  <FormatCard
-                    key={f.format_id}
-                    format={f}
-                    onSelectFormat={handleDownloading}
-                    isAudio={false}
+        <div className="mt-8 bg-white p-6 sm:p-8 rounded-2xl shadow-lg">
+          {/* Container cho Thumbnail và Formats (Responsive hơn) */}
+          <div className="flex flex-col md:flex-row gap-8">
+            {/* Cột trái: Thumbnail */}
+            <div className="w-full md:w-1/3 lg:w-2/5 flex-shrink-0">
+              {thumbnailUrl && (
+                <div className="relative aspect-video">
+                  <Image
+                    src={thumbnailUrl}
+                    alt="Video thumbnail"
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 33vw, 40vw"
+                    className="object-cover rounded-xl shadow-md"
                   />
-                ))}
-              </div>
+                </div>
+              )}
             </div>
-          )}
 
-          {/* Audio Formats */}
-          {formatsGrouped.audios.length > 0 && (
-            <div>
-              <h3 className="flex items-center justify-center font-bold text-xl mb-4 text-gray-700">
-                <span className="mr-2 text-3xl">🎵</span> Chọn chất lượng Audio
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {formatsGrouped.audios.map((f: any) => (
-                  <FormatCard
-                    key={f.format_id}
-                    format={f}
-                    onSelectFormat={handleDownloading}
-                    isAudio={true}
-                  />
-                ))}
-              </div>
+            {/* Cột phải: Danh sách các định dạng */}
+            <div className="w-full md:w-2/3 lg:w-3/5 space-y-6">
+              {/* Video Formats */}
+              {formatsGrouped.videos.length > 0 && (
+                <div>
+                  <h3 className="font-bold text-xl mb-3 text-gray-800 flex items-center">
+                    <span className="mr-2 text-2xl">🎞️</span>
+                    Chọn chất lượng Video
+                  </h3>
+                  {/* Grid layout responsive hơn */}
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                    {formatsGrouped.videos.map((f: any) => (
+                      <FormatCard
+                        key={f.format_id}
+                        format={f}
+                        onSelectFormat={handleDownloading}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Audio Formats */}
+              {formatsGrouped.audios.length > 0 && (
+                <div>
+                  <h3 className="font-bold text-xl mb-3 text-gray-800 flex items-center">
+                    <span className="mr-2 text-2xl">🎵</span>
+                    Chọn chất lượng Audio
+                  </h3>
+                  {/* Grid layout responsive hơn */}
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                    {formatsGrouped.audios.map((f: any) => (
+                      <FormatCard
+                        key={f.format_id}
+                        format={f}
+                        onSelectFormat={handleDownloading}
+                        group="audio"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       )}
     </div>
   );
 }
-
-// Giả sử FormatCard có thể trông như thế này để phù hợp với giao diện mới
-// components/FormatCard.tsx
-// "use client";
-// import React from "react";
-
-// export default function FormatCard({ format, onSelectFormat, isAudio }) {
-//   const formatClass = isAudio ? "bg-purple-100 border-purple-300 text-purple-800" : "bg-teal-100 border-teal-300 text-teal-800";
-//   const icon = isAudio ? "🎵" : "🎥";
-
-//   return (
-//     <button
-//       onClick={() => onSelectFormat(format.format_id)}
-//       className={`w-full p-4 rounded-xl shadow-md border-2 transition duration-300 ease-in-out transform hover:scale-105 ${formatClass}`}
-//     >
-//       <div className="flex items-center justify-between">
-//         <div className="flex items-center">
-//           <span className="text-xl mr-2">{icon}</span>
-//           <p className="font-semibold">{format.ext}</p>
-//         </div>
-//         <p className="font-bold text-lg">{format.resolution || format.note}</p>
-//       </div>
-//       {/* Thêm các thông tin khác nếu cần */}
-//       <p className="text-xs text-gray-500 mt-1 text-right">
-//         Dung lượng: {(format.filesize / 1024 / 1024).toFixed(2)} MB
-//       </p>
-//     </button>
-//   );
-// }
