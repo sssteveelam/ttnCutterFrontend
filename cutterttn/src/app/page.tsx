@@ -6,21 +6,6 @@ import DownloadModule from "../components/DownloadModule";
 import CutModule from "../components/CutModule";
 import LogsPage from "./logs/page";
 
-// Heroicons - Bạn có thể tìm thêm trên https://heroicons.com/
-const DownloadIcon = (props: any) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    {...props}>
-    <path
-      fillRule="evenodd"
-      d="M12 2.25a.75.75 0 0 1 .75.75v11.689l3.44-3.328a.75.75 0 1 1 1.026 1.06l-4.5 4.368a.75.75 0 0 1-1.026 0l-4.5-4.368a.75.75 0 1 1 1.026-1.06l3.44 3.328V3a.75.75 0 0 1 .75-.75Zm-9 13.5a.75.75 0 0 1 .75.75v2.25a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-2.25a.75.75 0 0 1 1.5 0v2.25a3 3 0 0 1-3 3H4.5a3 3 0 0 1-3-3v-2.25a.75.75 0 0 1 .75-.75Z"
-      clipRule="evenodd"
-    />
-  </svg>
-);
-
 const ScissorsIcon = (props: any) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -52,22 +37,9 @@ const ListIcon = (props: any) => (
 export default function HomePage() {
   return (
     <main className=" bg-gray-50  sm:p-10 flex flex-col items-center font-sans text-gray-800">
-      <h1 className="text-4xl sm:text-5xl font-extrabold mb-10 text-center text-indigo-700">
-        Video Cutting Prototype
-      </h1>
-
       <div className="w-full  ">
         {/* Download Section */}
-        <section className="bg-white p-6 sm:p-8 rounded-2xl shadow-xl border border-gray-200">
-          <div className="flex items-center space-x-3 mb-4">
-            <DownloadIcon className="h-8 w-8 text-indigo-500" />
-            <h2 className="text-2xl font-bold text-gray-700">
-              Tải xuống Video
-            </h2>
-          </div>
-          <p className="text-gray-500 mb-6">
-            Nhập URL YouTube và tải xuống video để bắt đầu.
-          </p>
+        <section className=" p-6 sm:p-8 rounded-2xl ">
           <DownloadModule />
         </section>
       </div>
