@@ -12,7 +12,7 @@ export default function SuccessPopup({
   isOpen,
   onClose,
   title = "Thành Công",
-  message = "Chọn thành công hehe!",
+  message = "Chọn thành công!",
 }: SuccessPopupProps) {
   // Xử lý khi nhấn phím Esc để đóng popup
   useEffect(() => {

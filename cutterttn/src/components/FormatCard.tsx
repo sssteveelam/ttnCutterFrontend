@@ -12,7 +12,7 @@ const getQualityStyles = (format, group) => {
     };
   }
 
-  const resolution = parseInt(format.resolution.split("x")[1], 10);
+  const resolution = parseInt(format.resolution?.split("x")[1], 10);
 
   if (resolution >= 2160) {
     return {
@@ -75,7 +75,7 @@ export default function FormatCard({ format, onSelectFormat, group, onPopup }) {
 
   const cardClasses = `
     p-4 rounded-xl shadow-sm text-center cursor-pointer 
-    transition-all duration-300  ${classGetQuality.bgColor} hover:scale-125
+    transition-all duration-300  ${classGetQuality?.bgColor} hover:scale-125
   `;
 
   return (
@@ -87,7 +87,7 @@ export default function FormatCard({ format, onSelectFormat, group, onPopup }) {
         data-tooltip-id="format-tooltip"
         data-tooltip-content={formatText(format)}
         className={cardClasses}
-        onClick={() => onSelectFormat(format.format_id)}>
+        onClick={() => onSelectFormat(format?.format_id)}>
         <div className="flex flex-col items-center justify-center space-y-2 ">
           <svg
             className="w-8 h-8 text-gray-700"
@@ -106,17 +106,17 @@ export default function FormatCard({ format, onSelectFormat, group, onPopup }) {
             />
           </svg>
 
-          <p className={`font-bold ${classGetQuality.textColor} text-lg`}>
+          <p className={`font-bold ${classGetQuality?.textColor} text-lg`}>
             {isAudio
-              ? format.abr
-                ? `${format.abr}kbps`
+              ? format?.abr
+                ? `${format?.abr}kbps`
                 : "Audio"
-              : `${format.resolution.split("x")[1]}p`}
+              : `${format?.resolution?.split("x")[1]}p`}
           </p>
 
           <p className="text-sm text-gray-600">
-            {format.filesize
-              ? formatBytes(format.filesize)
+            {format?.filesize
+              ? formatBytes(format?.filesize)
               : "Đang cập nhật..."}
           </p>
         </div>
